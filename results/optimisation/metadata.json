@@ -1,0 +1,24 @@
+{
+  "cpu": "AMD64 Family 26 Model 96 Stepping 0, AuthenticAMD",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "python": "3.14.0",
+  "numpy": "2.3.4",
+  "paths": 2000000,
+  "threads": [
+    1,
+    2,
+    4,
+    6,
+    12
+  ],
+  "repetitions": 11,
+  "statistical_repetitions": 120,
+  "parameters": [
+    100.0,
+    100.0,
+    1.0,
+    0.05,
+    0.2
+  ],
+  "exact_price": 10.450583572185565
+}
