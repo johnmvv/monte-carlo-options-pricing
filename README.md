@@ -1,5 +1,7 @@
 # Monte Carlo Options Pricing Engine
 
+![Python Tests](https://github.com/johnmvv/monte-carlo-options-pricing/actions/workflows/tests.yml/badge.svg)
+
 A Python implementation of Monte Carlo option pricing under the Black–Scholes model, with variance reduction, numerical validation and performance optimisation.
 
 The project investigates the trade-off between statistical accuracy and computational cost, using NumPy, SciPy and Numba.
