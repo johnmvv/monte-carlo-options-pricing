@@ -1,117 +1,233 @@
-
 # Monte Carlo Options Pricing Engine
 
-A Python implementation of numerical option pricing under the Black–Scholes model, with a focus on Monte Carlo simulation, variance reduction and computational performance.
+A Python implementation of Monte Carlo option pricing under the Black–Scholes model, with variance reduction, numerical validation and performance optimisation.
 
-## Overview
+The project investigates the trade-off between statistical accuracy and computational cost, using NumPy, SciPy and Numba.
 
-This project explores the pricing of financial derivatives using stochastic simulation and numerical methods.
+## Features
 
-The objective is to implement option-pricing algorithms from first principles, validate them against analytical results, and investigate the trade-off between statistical accuracy and computational cost.
-
-**Status:** In development.
+- **European option pricing:** Analytical Black–Scholes pricing and Monte Carlo simulation.
+- **Asian option pricing:** Arithmetic-average and geometric-average Asian options.
+- **Variance reduction:** Antithetic variates and control variates.
+- **Statistical analysis:** Standard errors, 95% confidence intervals and convergence experiments.
+- **Performance optimisation:** Numba compilation, parallel execution and chunked simulation.
+- **Automated testing:** Tests covering pricing methods, numerical accuracy and optimisation routines.
 
 ## Mathematical Framework
 
-Under the risk-neutral Black–Scholes model, the underlying asset follows geometric Brownian motion:
+Under the risk-neutral Black–Scholes model,
 
 $$
-dS_t = rS_t\,dt + \sigma S_t\,dW_t,
+dS_t=rS_t\,dt+\sigma S_t\,dW_t,
 $$
 
-where:
+where $r$ is the risk-free rate, $\sigma$ is volatility and $W_t$ is Brownian motion.
 
-- $S_t$ is the asset price at time $t$.
-- $r$ is the continuously compounded risk-free interest rate.
-- $\sigma$ is the volatility.
-- $W_t$ is standard Brownian motion.
-
-Assuming constant parameters and no dividends, the terminal asset price is
+The terminal asset price is
 
 $$
-S_T = S_0 \exp\left((r-\tfrac12\sigma^2)T
-+ \sigma\sqrt{T}Z\right),
+S_T=S_0\exp\left[\left(r-\frac{\sigma^2}{2}\right)T+\sigma\sqrt{T}Z\right],
 \qquad Z\sim N(0,1).
 $$
 
-For a European call option with strike $K$ and maturity $T$:
+For a European call with strike $K$ and maturity $T$,
 
 $$
-C_0 = e^{-rT}\mathbb{E}^{\mathbb{Q}}[(S_T-K)^+].
+C_0=e^{-rT}\mathbb{E}^{\mathbb{Q}}[(S_T-K)^+].
 $$
 
 The Monte Carlo estimator is
 
 $$
-\widehat{C}_N =
-\frac{e^{-rT}}{N}
-\sum_{i=1}^{N}(S_T^{(i)}-K)^+.
+\widehat C_N=\frac{e^{-rT}}{N}\sum_{i=1}^N(S_T^{(i)}-K)^+.
 $$
 
-The project investigates the estimator's convergence, sampling variance and computational efficiency.
+The implementation estimates the standard error from simulated discounted payoffs and constructs approximate 95% confidence intervals.
 
-## Features
+## Variance Reduction
 
-### Initial implementation
+### Antithetic Variates
 
-- [ ] Analytical Black–Scholes pricing for European options
-- [ ] Monte Carlo pricing using geometric Brownian motion
-- [ ] Confidence intervals and standard errors
-- [ ] Automated numerical validation
+Normal random variables are generated in pairs, $Z$ and $-Z$. The corresponding payoffs are averaged to reduce sampling variance when the paired observations are negatively correlated.
 
-### Planned extensions
+### Control Variates
 
-- [ ] Antithetic variates
-- [ ] Control variates
-- [ ] Arithmetic Asian option pricing
-- [ ] Convergence analysis and visualisation
-- [ ] Runtime benchmarking and Numba optimisation
+A correlated random variable with a known expectation is used to reduce estimator variance.
 
-## Technologies
+The project implements control variates for European calls and uses a geometric-average Asian option as a control for arithmetic-average Asian option pricing.
 
-- Python
-- NumPy
-- SciPy
-- Matplotlib
-- Numba
-- pytest
+## Installation
 
-## Validation
+Clone the repository:
 
-Numerical results will be compared against analytical Black–Scholes prices where closed-form solutions are available.
+```bash
+git clone https://github.com/johnmvv/monte-carlo-options-pricing.git
+cd monte-carlo-options-pricing
+```
 
-Planned tests include:
+Install the dependencies:
 
-1. Agreement with analytical European option prices.
-2. Monte Carlo convergence as sample size increases.
-3. Confidence interval coverage across repeated simulations.
-4. Correct behaviour at maturity and zero volatility.
-5. Variance reduction relative to standard Monte Carlo.
+```bash
+python -m pip install -r requirements.txt
+```
 
-## Example Parameters
+## Usage
 
-| Parameter | Value |
-|---|---:|
-| Initial asset price | 100 |
-| Strike price | 100 |
-| Time to maturity | 1 year |
-| Risk-free rate | 5% |
-| Volatility | 20% |
+Run a standard Monte Carlo simulation:
+
+```bash
+python monte_carlo.py
+```
+
+Compare with the analytical Black–Scholes solution:
+
+```bash
+python black_scholes.py
+```
+
+Example using the Python functions:
+
+```python
+from black_scholes import black_scholes_call
+from monte_carlo import monte_carlo_call
+
+params = dict(
+    S0=100,
+    K=100,
+    T=1,
+    r=0.05,
+    sigma=0.2
+)
+
+exact = black_scholes_call(**params)
+
+price, se, ci = monte_carlo_call(
+    **params,
+    n_simulations=100_000,
+    seed=42
+)
+
+print(f"Analytical price: {exact:.4f}")
+print(f"Monte Carlo price: {price:.4f}")
+print(f"95% confidence interval: {ci}")
+```
 
 For these parameters, the analytical European call price is approximately **10.4506**.
 
-This provides a benchmark for the numerical implementations.
+Additional experiments:
+
+```bash
+python compare_methods.py
+python compare_asian_methods.py
+python compare_variance.py
+python optimisation_suite.py --quick
+```
+
+Run the larger optimisation benchmark:
+
+```bash
+python optimisation_suite.py --full
+```
+
+## Performance Optimisation
+
+The project compares NumPy implementations with serial and parallel Numba kernels.
+
+### Parallel Kernel Benchmark
+
+The following results were recorded using two million simulated paths and pre-generated normal random variables.
+
+| Threads | Median runtime |
+|---|---:|
+| 1 | 8.116 ms |
+| 2 | 4.011 ms |
+| 4 | 3.420 ms |
+| 6 | 2.457 ms |
+| 12 | 1.790 ms |
+
+The 12-thread kernel achieved approximately **4.5× speedup** relative to the single-thread implementation.
+
+However, this improvement applies only to the computational kernel.
+
+### End-to-End Performance
+
+When random-number generation and chunk processing are included, parallel execution does not consistently improve runtime.
+
+For example, using a chunk size of 100,000 paths:
+
+| Configuration | Median runtime |
+|---|---:|
+| 1 thread | 20.28 ms |
+| 12 threads | 21.00 ms |
+
+This illustrates the importance of benchmarking the complete computational pipeline rather than individual kernels alone.
+
+Results depend on hardware, thread configuration and simulation settings.
+
+The saved benchmark was recorded on Windows 11 using Python 3.14.0 and NumPy 2.3.4.
+
+Full results and experimental metadata are available in `results/optimisation/`.
+
+## Numerical Results
+
+The repository includes plots examining Monte Carlo convergence, variance reduction and computational efficiency.
+
+### Convergence
+
+![Monte Carlo convergence](results/convergence.png)
+
+### Variance Reduction
+
+![Variance reduction](results/variance_reduction.png)
+
+### Runtime and Accuracy
+
+![Runtime versus accuracy](results/runtime_accuracy.png)
+
+## Testing
+
+The project includes automated tests covering analytical pricing, Monte Carlo estimators, Asian options, variance reduction and optimised implementations.
+
+Run the tests with:
+
+```bash
+python -m pytest -q
+```
+
+The reviewed repository passed **60 automated tests**.
+
+Tests check the implemented cases but do not establish correctness for every possible parameter combination.
 
 ## Project Structure
 
-The repository structure will be updated as components are implemented.
+| File or directory | Purpose |
+|---|---|
+| `black_scholes.py` | Analytical European call pricing |
+| `monte_carlo.py` | Standard Monte Carlo pricing |
+| `antithetic.py` | Antithetic variates |
+| `control_variate.py` | European option control variates |
+| `asian_options.py` | Arithmetic Asian option pricing |
+| `geometric_asian.py` | Geometric Asian option pricing |
+| `asian_control_variate.py` | Asian option control variates |
+| `numba_asian.py` | Numba-optimised Asian simulation |
+| `optimised/` | Optimised and parallel pricing implementations |
+| `optimisation_suite.py` | Performance and numerical benchmarking |
+| `benchmark*.py` | Additional benchmarking experiments |
+| `compare*.py` | Pricing method comparisons |
+| `plot_results.py` | Results visualisation |
+| `tests/` | Automated tests |
+| `results/` | Saved figures and benchmark data |
 
 ## Limitations
 
-The model assumes geometric Brownian motion, constant volatility, constant interest rates and frictionless markets.
+The Black–Scholes model assumes geometric Brownian motion, constant volatility, constant interest rates and frictionless markets.
 
-The implementation is intended for mathematical and computational study, not production trading.
+The implementation does not account for volatility smiles, jumps or transaction costs.
+
+Monte Carlo estimates have sampling uncertainty. Confidence intervals rely on statistical approximations, and computational performance depends on the execution environment.
+
+The project is intended for mathematical and computational research, not production trading.
 
 ## Licence
 
-Released under the MIT Licence.
+Released under the MIT Licence. See [LICENSE](LICENSE).
